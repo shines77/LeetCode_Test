@@ -11,6 +11,16 @@
 #include <memory.h>
 #include <assert.h>
 
+/// <commit>
+///
+/// LeetCode:  0146 LRU Cache
+///
+/// Question:  https://leetcode.com/problems/lru-cache/
+///
+/// Reference: https://leetcode.com/discuss/22101/c-double-list-and-unorder_map-77ms%EF%BC%8Chow-to-improve
+///
+/// </commit>
+
 namespace Q0146_LRUCache {
 
 #define LRUCACHE_USE_HASH_TABLE     1
@@ -33,6 +43,8 @@ private:
     int         mMask;
     HashItem *  mTableA;
     HashItem *  mTableB;
+
+    static const unsigned int kMaxQueryStep = 5;
 
 public:
     HashTable(int capacity) : mSize(0), mMask(0xFFFFFFFFU), mTableA(NULL), mTableB(NULL)
@@ -67,7 +79,6 @@ protected:
     int getHashA(int key) { return key & mMask; }
     int getHashB(int key) { return (key ^ 4491738) & mMask; }
 
-public:
     int calcSize(int capacity) {
         int size = 16;
         if (capacity > 16) {
@@ -80,16 +91,19 @@ public:
         return size;
     }
 
+public:
     void add(int key, LRUItem * item) {
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 3;
+        HashItem * endPtr   = startPtr + kMaxQueryStep;
         do {
             if (startPtr->key == key) {
                 startPtr->value = item;
                 return;
             }
+            if (startPtr->key == -1)
+                break;
             startPtr++;
         } while (startPtr != endPtr);
 
@@ -127,10 +141,12 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 3;
+        HashItem * endPtr   = startPtr + kMaxQueryStep;
         do {
             if (startPtr->key == key)
                 return startPtr->value;
+            if (startPtr->key == -1)
+                break;
             startPtr++;
         } while (startPtr != endPtr);
 
@@ -167,12 +183,14 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 3;
+        HashItem * endPtr   = startPtr + kMaxQueryStep;
         do {
             if (startPtr->key == key) {
                 startPtr->key = -2;
                 return;
             }
+            if (startPtr->key == -1)
+                break;
             startPtr++;
         } while (startPtr != endPtr);
 
