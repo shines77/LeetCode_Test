@@ -1,9 +1,12 @@
 
 
 #include "0146-LRUCache/LRUCache_Test.h"
-#include "0146-LRUCache/LRUCache.h"
 
-using namespace Q0146_LRUCache;
+//#include "0146-LRUCache/LRUCache.h"
+#include "0146-LRUCache/LRUCacheLite.h"
+
+//using namespace Q0146_LRUCache;
+using namespace Q0146_LRUCacheLite;
 
 void LRUCache_Test1()
 {

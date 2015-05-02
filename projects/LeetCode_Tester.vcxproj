@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\0146-LRUCache\LRUCache.h" />
+    <ClInclude Include="..\src\0146-LRUCache\LRUCacheLite.h" />
     <ClInclude Include="..\src\0146-LRUCache\LRUCache_Test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

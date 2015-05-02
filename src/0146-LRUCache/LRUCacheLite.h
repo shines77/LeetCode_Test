@@ -1,6 +1,6 @@
 
-#ifndef _LEETCODE_Q0146_LRUCACHE_H_
-#define _LEETCODE_Q0146_LRUCACHE_H_
+#ifndef _LEETCODE_Q0146_LRUCACHELITE_H_
+#define _LEETCODE_Q0146_LRUCACHELITE_H_
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -11,9 +11,7 @@
 #include <memory.h>
 #include <assert.h>
 
-namespace Q0146_LRUCache {
-
-#define LRUCACHE_USE_HASH_TABLE     1
+namespace Q0146_LRUCacheLite {
 
 struct LRUItem {
     int         key;
@@ -35,8 +33,7 @@ private:
     HashItem *  mTableB;
 
 public:
-    HashTable(int capacity) : mSize(0), mMask(0xFFFFFFFFU), mTableA(NULL), mTableB(NULL)
-    {
+    HashTable(int capacity) {
         mSize = calcSize(capacity);
         mMask = mSize - 1;
         mTableA = new HashItem[mSize];
@@ -50,8 +47,6 @@ public:
         for (int i = 0; i < mSize; ++i) {
             tablePtrA->key   = -1;
             tablePtrB->key   = -1;
-            //tablePtrA->value = NULL;
-            //tablePtrB->value = NULL;
             tablePtrA++;
             tablePtrB++;
         }
@@ -78,7 +73,7 @@ public:
             if ((size - capacity) < size / 4)
                 size = size << 1;
         }
-        else { size = 32; }
+        else size = 32;
         return size;
     }
 
@@ -86,80 +81,50 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr;
-        if (startPtr->key == key || (startPtr + 1)->key == key
-            || (startPtr + 2)->key == key || (startPtr + 3)->key == key) {
-            startPtr->key   = key;
+        if (startPtr[0].key == key || startPtr[1].key == key
+            || startPtr[2].key == key || startPtr[3].key == key) {
+            startPtr->key = key;
             startPtr->value = item;
             return;
         }
 
         int indexB = getHashB(key);
-        startPtr = &mTableB[indexB];
-        endPtr   = &mTableB[mSize];
-        while (startPtr != endPtr) {
-            if (startPtr->key >= 0 && startPtr->key != key) {
-                startPtr++;
-                continue;
+        int startIndex = indexB;
+        do {
+            if (mTableB[indexB].key >= 0 && mTableB[indexB].key != key) {
+                indexB = (indexB + 1) & mMask;
+                if (indexB != startIndex) continue;
             }
             else {
-                startPtr->key   = key;
-                startPtr->value = item;;
+                mTableB[indexB].key = key;
+                mTableB[indexB].value = item;;
                 return;
             }
-        }
-
-        startPtr = mTableB;
-        endPtr   = &mTableB[indexB];
-        while (startPtr != endPtr) {
-            if (startPtr->key >= 0 && startPtr->key != key) {
-                startPtr++;
-                continue;
-            }
-            else {
-                startPtr->key   = key;
-                startPtr->value = item;;
-                return;
-            }
-        }
+        } while (1);
     }
 
     LRUItem * find(int key) {
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr;
-        if (startPtr->key == key || (startPtr + 1)->key == key
-            || (startPtr + 2)->key == key || (startPtr + 3)->key == key) {
+        if (startPtr[0].key == key || startPtr[1].key == key
+            || startPtr[2].key == key || startPtr[3].key == key) {
             return startPtr->value;
         }
 
         int indexB = getHashB(key);
-        startPtr = &mTableB[indexB];
-        endPtr   = &mTableB[mSize];
-        while (startPtr != endPtr) {
-            if (startPtr->key != key) {
-                if (startPtr->key != -1) {
-                    startPtr++;
-                    continue;
+        int startIndex = indexB;
+        do {
+            if (mTableB[indexB].key != key) {
+                if (mTableB[indexB].key != -1) {
+                    indexB = (indexB + 1) & mMask;
+                    if (indexB != startIndex) continue;
                 }
                 else return NULL;
             }
-            else return startPtr->value;
-        }
+            else return mTableB[indexB].value;
+        } while (1);
 
-        startPtr = mTableB;
-        endPtr   = &mTableB[indexB];
-        while (startPtr != endPtr) {
-            if (startPtr->key != key) {
-                if (startPtr->key != -1) {
-                    startPtr++;
-                    continue;
-                }
-                else return NULL;
-            }
-            else return startPtr->value;
-        }
         return NULL;
     }
 
@@ -167,39 +132,24 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr;
-        if (startPtr->key == key || (startPtr + 1)->key == key
-            || (startPtr + 2)->key == key || (startPtr + 3)->key == key) {
+        if (startPtr[0].key == key || startPtr[1].key == key
+            || startPtr[2].key == key || startPtr[3].key == key) {
             startPtr->key = -2;
             return;
         }
 
         int indexB = getHashB(key);
-        startPtr = &mTableB[indexB];
-        endPtr   = &mTableB[mSize];
-        while (startPtr != endPtr) {
-            if (startPtr->key != key) {
-                startPtr++;
-                continue;
+        int startIndex = indexB;
+        do {
+            if (mTableB[indexB].key != key) {
+                indexB = (indexB + 1) & mMask;
+                if (indexB != startIndex) continue;
             }
             else {
-                startPtr->key = -2;
+                mTableB[indexB].key = -2;
                 return;
             }
-        }
-
-        startPtr = mTableB;
-        endPtr   = &mTableB[indexB];
-        while (startPtr != endPtr) {
-            if (startPtr->key != key) {
-                startPtr++;
-                continue;
-            }
-            else {
-                startPtr->key = -2;
-                return;
-            }
-        }
+        } while (1);
     }
 };
 
@@ -207,25 +157,15 @@ class LRUCache {
 private:
     int         mSize;
     int         mCapacity;
-
     LRUItem *   mCacheList;
     LRUItem *   mCacheListLast;
     LRUItem *   mHeadItem;
     LRUItem *   mTailItem;
-
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
     HashTable   mHashTable;
-#endif
 
 public:
-    LRUCache(int capacity)
-        : mSize(0), mCapacity(capacity), mCacheList(NULL), mCacheListLast(NULL)
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
-          , mHashTable(capacity)
-#endif
+    LRUCache(int capacity) : mSize(0), mCapacity(capacity), mCacheList(NULL), mCacheListLast(NULL), mHashTable(capacity)
     {
-        assert(capacity > 0);
-
         mCacheList = new LRUItem[capacity];
         mCacheListLast = mCacheList;
 
@@ -246,9 +186,6 @@ public:
     int getSize() { return mSize; }
 
     void appendNewItem(LRUItem * cacheItem, int key, int value) {
-        assert(mSize < mCapacity);
-        assert(mCacheListLast < (mCacheList + mCapacity));
-
         LRUItem * newItem = mCacheListLast;
         newItem->key   = key;
         newItem->value = value;
@@ -257,15 +194,10 @@ public:
         mCacheListLast++;
         mSize++;
 
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
         mHashTable.add(key, newItem);
-#endif
-        assert(mCacheListLast <= (mCacheList + mCapacity));
-        assert(mSize <= mCapacity);
 
         // Record the recent used item.
         if (mHeadItem) {
-            assert(mHeadItem->prev == NULL);
             if (mHeadItem->prev != newItem)
                 mHeadItem->prev = newItem;
         }
@@ -278,61 +210,49 @@ public:
                 mTailItem = cacheItem;
             }
         }
-        else {
-            mTailItem = newItem;
-        }
+        else mTailItem = newItem;
     }
 
     void eliminateItem(LRUItem * cacheItem, int key, int value) {
         LRUItem * tailItem = mTailItem;
-        assert(tailItem != NULL);
-        if (tailItem) {
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
-            // Remove a key
-            mHashTable.remove(tailItem->key);
-#endif
-            LRUItem * newTailItem = tailItem->prev;
-            if (newTailItem) {
-                newTailItem->next = NULL;
-                // Record the last used item
-                mTailItem = newTailItem;
-            }
+        // Remove a key
+        mHashTable.remove(tailItem->key);
 
-            tailItem->key   = key;
-            tailItem->value = value;
-            tailItem->prev  = NULL;
-
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
-            // Add a key
-            mHashTable.add(key, tailItem);
-#endif
-            // To avoid their own point to themselves.
-            if (tailItem != mHeadItem) {
-                tailItem->next = mHeadItem;
-
-                // Record the recent used item
-                mHeadItem->prev = tailItem;
-                mHeadItem = tailItem;
-            }
-            else {
-                tailItem->next = NULL;
-            }
+        LRUItem * newTailItem = tailItem->prev;
+        if (newTailItem) {
+            newTailItem->next = NULL;
+            // Record the last used item
+            mTailItem = newTailItem;
         }
+
+        tailItem->key   = key;
+        tailItem->value = value;
+        tailItem->prev  = NULL;
+
+        // Add a key
+        mHashTable.add(key, tailItem);
+
+        // To avoid their own point to themselves.
+        if (tailItem != mHeadItem) {
+            tailItem->next = mHeadItem;
+
+            // Record the recent used item
+            mHeadItem->prev = tailItem;
+            mHeadItem = tailItem;
+        }
+        else tailItem->next = NULL;
     }
 
     void pickupItem(LRUItem * cacheItem, int value) {
-        assert(cacheItem != NULL);
-
         // Modify the value directly.
         cacheItem->value = value;
 
         if (cacheItem != mHeadItem) {
-            if (cacheItem->prev) {
+            if (cacheItem->prev)
                 cacheItem->prev->next = cacheItem->next;
-            }
-            if (cacheItem->next) {
+
+            if (cacheItem->next)
                 cacheItem->next->prev = cacheItem->prev;
-            }
 
             // Record the last used item.
             if (cacheItem == mTailItem) {
@@ -347,21 +267,17 @@ public:
             cacheItem->next = mHeadItem;
 
             // Modify the recent used item.
-            if (mHeadItem) {
-                if (cacheItem != mHeadItem->prev)
-                    mHeadItem->prev = cacheItem;
-            }
+            if (mHeadItem && cacheItem != mHeadItem->prev)
+                mHeadItem->prev = cacheItem;
             // Record the recent used item.
             mHeadItem = cacheItem;
         }
     }
 
-#if defined(LRUCACHE_USE_HASH_TABLE) && (LRUCACHE_USE_HASH_TABLE != 0)
-
     LRUItem * find(int key, int &existed) {
         LRUItem * foundItem = mHashTable.find(key);
         existed = (foundItem != NULL);
-        return (foundItem != NULL) ? foundItem : mTailItem;
+        return existed ? foundItem : mTailItem;
     }
 
     int get(int key) {
@@ -372,40 +288,6 @@ public:
         }
         return -1;
     }
-
-#else
-
-    LRUItem * find(int key, int &existed) {
-        LRUItem * lastItem = NULL;
-        LRUItem * cacheItem = mHeadItem;
-        while (cacheItem) {
-            if (cacheItem->key == key) {
-                existed = 1;
-                return cacheItem;
-            }
-            if (cacheItem->next == NULL) {
-                lastItem = cacheItem;
-                break;
-            }
-            cacheItem = cacheItem->next;
-        }
-        existed = 0;
-        return lastItem;
-    }
-
-    int get(int key) {
-        LRUItem * cacheItem = mHeadItem;
-        while (cacheItem) {
-            if (cacheItem->key == key) {
-                pickupItem(cacheItem, cacheItem->value);
-                return cacheItem->value;
-            }
-            cacheItem = cacheItem->next;
-        }
-        return -1;
-    }
-
-#endif  /* LRUCACHE_USE_HASH_TABLE */
     
     void set(int key, int value) {
         int existed;
@@ -457,6 +339,6 @@ public:
     }
 };
 
-}  // namespace Q0146_LRUCache
+}  // namespace Q0146_LRUCacheLite
 
-#endif  /* _LEETCODE_Q0146_LRUCACHE_H_ */
+#endif  /* _LEETCODE_Q0146_LRUCACHELITE_H_ */
