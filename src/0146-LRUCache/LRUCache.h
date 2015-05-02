@@ -98,12 +98,15 @@ public:
         HashItem * startPtr = &mTableA[indexA];
         HashItem * endPtr   = startPtr + kMaxQueryStep;
         do {
+            if (startPtr->key == -1) {
+                startPtr->key   = key;
+                startPtr->value = item;
+                return;
+            }
             if (startPtr->key == key) {
                 startPtr->value = item;
                 return;
             }
-            if (startPtr->key == -1)
-                break;
             startPtr++;
         } while (startPtr != endPtr);
 
