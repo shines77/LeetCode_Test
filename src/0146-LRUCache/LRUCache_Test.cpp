@@ -2,11 +2,15 @@
 
 #include "0146-LRUCache/LRUCache_Test.h"
 
-//#include "0146-LRUCache/LRUCache.h"
-#include "0146-LRUCache/LRUCacheLite.h"
+#define USE_LRUCACHELITE_VERSION    1
 
-//using namespace Q0146_LRUCache;
+#if defined(USE_LRUCACHELITE_VERSION) && (USE_LRUCACHELITE_VERSION != 0)
+#include "0146-LRUCache/LRUCacheLite.h"
 using namespace Q0146_LRUCacheLite;
+#else
+using namespace Q0146_LRUCache;
+#include "0146-LRUCache/LRUCache.h"
+#endif
 
 void LRUCache_Test1()
 {

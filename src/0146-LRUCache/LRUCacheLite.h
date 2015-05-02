@@ -70,10 +70,9 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 4;
+        HashItem * endPtr   = startPtr + 3;
         do {
             if (startPtr->key == key) {
-                startPtr->key   = key;
                 startPtr->value = item;
                 return;
             }
@@ -99,7 +98,7 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 4;
+        HashItem * endPtr   = startPtr + 3;
         do {
             if (startPtr->key == key)
                 return startPtr->value;
@@ -126,7 +125,7 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        HashItem * endPtr   = startPtr + 4;
+        HashItem * endPtr   = startPtr + 3;
         do {
             if (startPtr->key == key) {
                 startPtr->key = -2;
@@ -166,11 +165,6 @@ public:
         mCacheList = new LRUItem[capacity];
         mCacheListLast = mCacheList;
 
-        mCacheList[0].key   = -1;
-        mCacheList[0].value = -1;
-        mCacheList[0].prev  = NULL;
-        mCacheList[0].next  = NULL;
-
         mHeadItem = NULL;
         mTailItem = NULL;
     }
@@ -182,39 +176,41 @@ public:
 
     int getSize() { return mSize; }
 
-    void appendNewItem(LRUItem * cacheItem, int key, int value) {
+    void appendItem(int key, int value) {
         LRUItem * newItem = mCacheListLast;
+        mCacheListLast++;
+        mSize++;
+
         newItem->key   = key;
         newItem->value = value;
         newItem->prev  = NULL;
         newItem->next  = mHeadItem;
-        mCacheListLast++;
-        mSize++;
 
         // Add a key
         mHashTable.add(key, newItem);
 
-        // Record the recent used item.
-        if (mHeadItem) {
-            if (mHeadItem->prev != newItem)
-                mHeadItem->prev = newItem;
+        if (mHeadItem != NULL) {
+            // Record the recent used item.
+            mHeadItem->prev = newItem;
+            mHeadItem = newItem;
         }
-        mHeadItem = newItem;
-
-        // Record the last used item.
-        if (cacheItem) {
-            if (cacheItem != mTailItem) {
-                cacheItem->next = NULL;
-                mTailItem = cacheItem;
-            }
+        else {
+            // Record the recent used item and the last used item.
+            mHeadItem = mTailItem = newItem;
         }
-        else mTailItem = newItem;
     }
 
-    void eliminateItem(LRUItem * cacheItem, int key, int value) {
+    void eliminateItem(int key, int value) {
         LRUItem * tailItem = mTailItem;
-        // Remove a key
-        mHashTable.remove(tailItem->key);
+        if (key != tailItem->key) {
+            // Remove a key
+            mHashTable.remove(tailItem->key);
+            // Add a key
+            mHashTable.add(key, tailItem);
+
+            tailItem->key = key;
+        }
+        tailItem->value = value;
 
         LRUItem * newTailItem = tailItem->prev;
         if (newTailItem) {
@@ -222,13 +218,7 @@ public:
             // Record the last used item
             mTailItem = newTailItem;
         }
-
-        tailItem->key   = key;
-        tailItem->value = value;
-        tailItem->prev  = NULL;
-
-        // Add a key
-        mHashTable.add(key, tailItem);
+        tailItem->prev = NULL;
 
         // To avoid their own point to themselves.
         if (tailItem != mHeadItem) {
@@ -246,18 +236,15 @@ public:
         cacheItem->value = value;
 
         if (cacheItem != mHeadItem) {
-            if (cacheItem->prev)
+            if (cacheItem != mTailItem) {
+                // It's not head and not tail.
                 cacheItem->prev->next = cacheItem->next;
-
-            if (cacheItem->next)
                 cacheItem->next->prev = cacheItem->prev;
-
-            // Record the last used item.
-            if (cacheItem == mTailItem) {
-                if (cacheItem->prev) {
-                    cacheItem->prev->next = NULL;
-                    mTailItem = cacheItem->prev;
-                }
+            }
+            else {
+                // Record the last used item.
+                cacheItem->prev->next = NULL;
+                mTailItem = cacheItem->prev;
             }
 
             // Link the old head item to new head item.
@@ -265,21 +252,18 @@ public:
             cacheItem->next = mHeadItem;
 
             // Modify the recent used item.
-            if (mHeadItem && cacheItem != mHeadItem->prev)
-                mHeadItem->prev = cacheItem;
+            mHeadItem->prev = cacheItem;
             // Record the recent used item.
             mHeadItem = cacheItem;
         }
     }
 
-    LRUItem * find(int key, int &existed) {
-        LRUItem * foundItem = mHashTable.find(key);
-        existed = (foundItem != NULL);
-        return existed ? foundItem : mTailItem;
+    LRUItem * find(int key) {
+        return mHashTable.find(key);
     }
 
     int get(int key) {
-        LRUItem * foundItem = mHashTable.find(key);
+        LRUItem * foundItem = find(key);
         if (foundItem) {
             pickupItem(foundItem, foundItem->value);
             return foundItem->value;
@@ -288,22 +272,21 @@ public:
     }
     
     void set(int key, int value) {
-        int existed;
-        LRUItem * cacheItem = find(key, existed);
-        if (existed == 0) {
+        LRUItem * foundItem = find(key);
+        if (foundItem == NULL) {
             // It's a new key.
             if (mSize < mCapacity) {
-                // The cache list capacity is not full, append new item to head only.
-                appendNewItem(cacheItem, key, value);
+                // The cache list capacity is not full, append a new item to head only.
+                appendItem(key, value);
             }
             else {
                 // The cache list capacity is full, must be eliminate a item.
-                eliminateItem(cacheItem, key, value);
+                eliminateItem(key, value);
             }
         }
         else {
             // Pickup the item to head.
-            pickupItem(cacheItem, value);
+            pickupItem(foundItem, value);
         }
     }
 
