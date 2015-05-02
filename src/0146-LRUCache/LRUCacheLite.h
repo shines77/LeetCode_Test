@@ -38,19 +38,8 @@ public:
         mMask = mSize - 1;
         mTableA = new HashItem[mSize];
         mTableB = new HashItem[mSize];
-#if 1
         ::memset(mTableA, -1, sizeof(HashItem) * mSize);
         ::memset(mTableB, -1, sizeof(HashItem) * mSize);
-#else
-        HashItem * tablePtrA = &mTableA[0];
-        HashItem * tablePtrB = &mTableB[0];
-        for (int i = 0; i < mSize; ++i) {
-            tablePtrA->key   = -1;
-            tablePtrB->key   = -1;
-            tablePtrA++;
-            tablePtrB++;
-        }
-#endif
     }
 
     ~HashTable() {
@@ -81,12 +70,15 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        if (startPtr[0].key == key || startPtr[1].key == key
-            || startPtr[2].key == key || startPtr[3].key == key) {
-            startPtr->key = key;
-            startPtr->value = item;
-            return;
-        }
+        HashItem * endPtr   = startPtr + 4;
+        do {
+            if (startPtr->key == key) {
+                startPtr->key   = key;
+                startPtr->value = item;
+                return;
+            }
+            startPtr++;
+        } while (startPtr != endPtr);
 
         int indexB = getHashB(key);
         int startIndex = indexB;
@@ -107,10 +99,12 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        if (startPtr[0].key == key || startPtr[1].key == key
-            || startPtr[2].key == key || startPtr[3].key == key) {
-            return startPtr->value;
-        }
+        HashItem * endPtr   = startPtr + 4;
+        do {
+            if (startPtr->key == key)
+                return startPtr->value;
+            startPtr++;
+        } while (startPtr != endPtr);
 
         int indexB = getHashB(key);
         int startIndex = indexB;
@@ -132,11 +126,14 @@ public:
         int indexA = getHashA(key);
 
         HashItem * startPtr = &mTableA[indexA];
-        if (startPtr[0].key == key || startPtr[1].key == key
-            || startPtr[2].key == key || startPtr[3].key == key) {
-            startPtr->key = -2;
-            return;
-        }
+        HashItem * endPtr   = startPtr + 4;
+        do {
+            if (startPtr->key == key) {
+                startPtr->key = -2;
+                return;
+            }
+            startPtr++;
+        } while (startPtr != endPtr);
 
         int indexB = getHashB(key);
         int startIndex = indexB;
@@ -164,7 +161,7 @@ private:
     HashTable   mHashTable;
 
 public:
-    LRUCache(int capacity) : mSize(0), mCapacity(capacity), mCacheList(NULL), mCacheListLast(NULL), mHashTable(capacity)
+    LRUCache(int capacity) : mSize(0), mCapacity(capacity), mHashTable(capacity)
     {
         mCacheList = new LRUItem[capacity];
         mCacheListLast = mCacheList;
@@ -194,6 +191,7 @@ public:
         mCacheListLast++;
         mSize++;
 
+        // Add a key
         mHashTable.add(key, newItem);
 
         // Record the recent used item.
